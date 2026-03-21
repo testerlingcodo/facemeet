@@ -1,7 +1,7 @@
 // In production, point to your Render backend URL
 const BACKEND = window.location.hostname === 'localhost'
   ? ''
-  : 'https://facemeet-server.onrender.com'; // ← change this to your actual Render URL
+  : 'https://facemeet.onrender.com'; // ← change this to your actual Render URL
 const socket = io(BACKEND);
 
 // Register rooms-list handler immediately — BEFORE any socket events can fire
