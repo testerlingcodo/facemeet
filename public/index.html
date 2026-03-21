@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>FaceMeet</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
@@ -11,21 +12,42 @@
 
   <!-- JOIN SCREEN -->
   <div id="join-screen" class="screen active">
-    <div class="join-card">
-      <div class="logo">
-        <span class="logo-icon">📹</span>
-        <h1>FaceMeet</h1>
-        <p>Free video meetings. No account needed.</p>
-      </div>
-      <div class="join-form">
-        <input type="text" id="name-input" placeholder="Your name" maxlength="30" autocomplete="off" />
-        <div class="room-row">
-          <input type="text" id="room-input" placeholder="Room code (e.g. ABC123)" maxlength="20" autocomplete="off" />
-          <button id="random-btn" title="Random code">🎲</button>
+    <div class="join-layout">
+
+      <!-- LEFT: join form -->
+      <div class="join-card">
+        <div class="logo">
+          <img src="logo.svg" alt="FaceMeet" class="logo-img" />
+          <h1 class="logo-wordmark"><span class="wm-face">Face</span><span class="wm-meet">Meet</span></h1>
+          <p>Free video meetings. No account needed.</p>
         </div>
-        <button id="join-btn" class="btn-primary">Join Meeting</button>
-        <p class="hint">Share the room code with others to let them join</p>
+        <div class="join-form">
+          <input type="text" id="name-input" placeholder="Your name" maxlength="30" autocomplete="off" />
+          <div class="room-row">
+            <input type="text" id="room-input" placeholder="Room code (e.g. ABC123)" maxlength="20" autocomplete="off" />
+            <button id="random-btn" title="Random code">🎲</button>
+          </div>
+          <!-- Password field: always visible -->
+          <div id="password-row" class="pw-row-wrap">
+            <input type="password" id="password-input" placeholder="Password (optional — leave blank for public)" maxlength="50" autocomplete="off" />
+            <span class="pw-hint" id="pw-hint"></span>
+          </div>
+          <button id="join-btn" class="btn-primary">Join Meeting</button>
+          <p class="hint">Share the room code with others to let them join</p>
+        </div>
       </div>
+
+      <!-- RIGHT: active rooms browser -->
+      <div class="rooms-panel">
+        <div class="rooms-panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Active Rooms
+        </div>
+        <div id="rooms-list">
+          <div class="rooms-empty">No active rooms yet.<br/>Be the first to start one!</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -33,13 +55,57 @@
   <div id="meeting-screen" class="screen">
     <div id="header">
       <div id="room-display">
+        <img src="logo.svg" alt="" class="header-logo" />
         Room: <span id="room-code-display"></span>
         <button id="copy-btn" title="Copy room code">📋</button>
       </div>
       <div id="participant-count">👥 <span id="count">1</span></div>
     </div>
 
+    <!-- CHAT UNREAD BANNER -->
+    <div id="chat-banner">
+      <div id="chat-banner-left">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span id="chat-banner-text"></span>
+      </div>
+      <div id="chat-banner-right">
+        <button id="chat-banner-open">Open Chat</button>
+        <button id="chat-banner-dismiss">✕</button>
+      </div>
+    </div>
+
+    <!-- SCREEN SHARE NOTIFICATION BANNER -->
+    <div id="ss-banner">
+      <div id="ss-banner-left">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span id="ss-banner-text"></span>
+      </div>
+      <div id="ss-banner-right">
+        <button id="ss-view-btn">View</button>
+        <button id="ss-dismiss-btn">✕</button>
+      </div>
+    </div>
+
     <div id="video-grid"></div>
+
+    <!-- RIGHT-CLICK CONTEXT MENU -->
+    <div id="ctx-menu">
+      <div id="ctx-name"></div>
+      <button id="ctx-mute">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <span id="ctx-mute-label">Mute</span>
+      </button>
+      <button id="ctx-hide">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 9l5-3v12l-5-3V9z"/></svg>
+        <span id="ctx-hide-label">Hide Camera</span>
+      </button>
+      <div class="ctx-divider"></div>
+      <div class="ctx-volume">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <input type="range" id="ctx-volume" min="0" max="200" value="100" />
+        <span id="ctx-volume-val">100%</span>
+      </div>
+    </div>
 
     <!-- FILTER PANEL -->
     <div id="filter-panel">
@@ -173,6 +239,32 @@
         </div>
       </div>
 
+      <!-- SHARE SCREEN -->
+      <div class="ctrl-wrap" style="position:relative">
+        <button id="share-btn" class="ctrl-btn" title="Share screen">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </button>
+        <span class="ctrl-label" id="share-label">Share</span>
+
+        <!-- Audio option popover -->
+        <div id="share-popover">
+          <div class="share-popover-title">Share your screen</div>
+          <label class="share-audio-toggle">
+            <input type="checkbox" id="share-audio-cb" checked />
+            <span class="share-audio-track"></span>
+            Include computer audio
+          </label>
+          <div class="share-popover-btns">
+            <button id="share-cancel-btn">Cancel</button>
+            <button id="share-start-btn">Start Sharing</button>
+          </div>
+        </div>
+      </div>
+
       <div class="ctrl-wrap">
         <button id="filter-btn-toggle" class="ctrl-btn" title="Video filters">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -181,6 +273,16 @@
           </svg>
         </button>
         <span class="ctrl-label">Filters</span>
+      </div>
+
+      <div class="ctrl-wrap">
+        <button id="chat-btn" class="ctrl-btn" title="Chat">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span id="chat-badge"></span>
+        </button>
+        <span class="ctrl-label">Chat</span>
       </div>
 
       <div class="ctrl-wrap">
@@ -195,9 +297,50 @@
 
     </div>
 
+    <!-- STOP SHARING BAR (visible to sharer) -->
+    <div id="stop-share-bar">
+      <div class="stop-bar-left">
+        <span class="rec-dot"></span>
+        You are sharing your screen
+      </div>
+      <button id="stop-share-bar-btn">Stop Sharing</button>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div id="chat-panel">
+      <div id="chat-header">
+        <span>In-Meeting Chat</span>
+        <button id="chat-close">✕</button>
+      </div>
+      <div id="chat-messages"></div>
+      <div id="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Send a message…" maxlength="500" autocomplete="off" />
+        <button id="chat-send">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18">
+            <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN SHARE FULLSCREEN OVERLAY -->
+    <div id="ss-overlay">
+      <div id="ss-overlay-header">
+        <div id="ss-overlay-name"></div>
+        <button id="ss-overlay-close">✕ Close</button>
+      </div>
+      <video id="ss-overlay-video" autoplay playsinline muted></video>
+    </div>
+
     <div id="toast"></div>
   </div>
 
+  <script>
+    // Unregister any cached service workers that break socket.io
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    }
+  </script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>
 </body>

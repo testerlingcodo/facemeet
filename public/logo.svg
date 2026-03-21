@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="bgG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EC4FF"/>
+      <stop offset="55%" stop-color="#2D86EE"/>
+      <stop offset="100%" stop-color="#1558C8"/>
+    </linearGradient>
+    <linearGradient id="faceG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B8E4FF"/>
+      <stop offset="100%" stop-color="#7EC6FF"/>
+    </linearGradient>
+    <clipPath id="iconClip">
+      <rect width="120" height="120" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="120" height="120" rx="28" fill="url(#bgG)"/>
+
+  <g clip-path="url(#iconClip)">
+
+    <!-- ── LEFT HALF: Chat bubble with smiley face ── -->
+    <!-- Bubble body -->
+    <path d="M10 30 Q10 22 18 22 L58 22 L58 74 Q58 82 50 82 L32 82 L22 94 L22 82 Q10 82 10 74 Z"
+          fill="url(#faceG)" opacity="0.92"/>
+    <!-- Left eye -->
+    <circle cx="32" cy="46" r="3.5" fill="white"/>
+    <!-- Right eye -->
+    <circle cx="46" cy="46" r="3.5" fill="white"/>
+    <!-- Smile -->
+    <path d="M30 57 Q39 66 48 57" stroke="white" stroke-width="3" fill="none"
+          stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- ── DIVIDER ── -->
+    <line x1="62" y1="18" x2="62" y2="100"
+          stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+
+    <!-- ── RIGHT HALF: Video camera ── -->
+    <!-- Camera body -->
+    <rect x="65" y="36" width="30" height="22" rx="5" fill="white" opacity="0.95"/>
+    <!-- Lens ring outer -->
+    <circle cx="80" cy="47" r="7" fill="rgba(70,140,220,0.25)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    <!-- Lens inner -->
+    <circle cx="80" cy="47" r="3.5" fill="rgba(90,160,230,0.55)"/>
+    <!-- Camera arm / triangle -->
+    <path d="M95 40 L108 33 L108 62 L95 55 Z" fill="white" opacity="0.95"/>
+
+  </g>
+
+  <!-- Subtle inner shadow rim -->
+  <rect width="120" height="120" rx="28" fill="none"
+        stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+</svg>
