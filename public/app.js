@@ -149,11 +149,15 @@ function startFilterCanvas(rawStream) {
 
   filterSourceVideo = document.createElement('video');
   filterSourceVideo.srcObject = rawStream;
-  filterSourceVideo.autoplay = true;
   filterSourceVideo.playsInline = true;
   filterSourceVideo.muted = true;
+  filterSourceVideo.setAttribute('playsinline', '');
+  // Append hidden to body so browsers allow autoplay on it
+  filterSourceVideo.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+  document.body.appendChild(filterSourceVideo);
 
   let lastFaceMeshSend = 0;
+  let drawStarted = false;
 
   function drawFrame() {
     if (filterSourceVideo.readyState >= 2) {
@@ -178,7 +182,22 @@ function startFilterCanvas(rawStream) {
     }
     filterAnimId = requestAnimationFrame(drawFrame);
   }
-  filterSourceVideo.onloadedmetadata = drawFrame;
+
+  function startDraw() {
+    if (drawStarted) return;
+    drawStarted = true;
+    filterSourceVideo.play().catch(() => {});
+    drawFrame();
+  }
+
+  if (filterSourceVideo.readyState >= 1) {
+    startDraw();
+  } else {
+    filterSourceVideo.onloadedmetadata = startDraw;
+    filterSourceVideo.oncanplay = startDraw;
+  }
+  // Fallback: start after short delay regardless
+  setTimeout(startDraw, 500);
 
   // Combine canvas video track + original audio tracks
   const canvasStream = filterCanvas.captureStream(30);
@@ -1280,6 +1299,7 @@ leaveBtn.addEventListener('click', () => {
     Object.values(screenPeers).forEach(pc => pc.close());
   }
   if (filterAnimId) cancelAnimationFrame(filterAnimId);
+  if (filterSourceVideo && filterSourceVideo.parentNode) filterSourceVideo.parentNode.removeChild(filterSourceVideo);
   if (screenStream) screenStream.getTracks().forEach(t => t.stop());
   localStream.getTracks().forEach(t => t.stop());
   Object.values(peers).forEach(pc => pc.close());
