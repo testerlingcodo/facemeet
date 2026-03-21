@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(netstat -ano)",
+      "Read(//c/Users/Harvey/Downloads/Face Meet/**)",
+      "Bash(taskkill //F //PID 2576)",
+      "Bash(git --version)",
+      "Bash(gh --version)"
+    ]
+  }
+}
