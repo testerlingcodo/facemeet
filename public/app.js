@@ -1,4 +1,8 @@
-const socket = io();
+// In production, point to your Render backend URL
+const BACKEND = window.location.hostname === 'localhost'
+  ? ''
+  : 'https://REPLACE_WITH_YOUR_RENDER_URL.onrender.com';
+const socket = io(BACKEND);
 
 // ── STATE ──
 let localStream = null;     // raw camera stream
