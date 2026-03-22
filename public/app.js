@@ -1309,7 +1309,7 @@ async function loadCameraList() {
   camList.innerHTML = '';
   cameras.forEach((cam, i) => {
     const li = document.createElement('li');
-    const isActive = cam.deviceId === activeCameraId;
+    const isActive = cam.deviceId && activeCameraId && cam.deviceId === activeCameraId;
     if (isActive) li.classList.add('active');
     li.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="flex-shrink:0;opacity:0.7">
@@ -1386,7 +1386,7 @@ async function loadMicList() {
   micList.innerHTML = '';
   mics.forEach((mic, i) => {
     const li = document.createElement('li');
-    const isActive = mic.deviceId === activeMicId;
+    const isActive = mic.deviceId && activeMicId && mic.deviceId === activeMicId;
     if (isActive) li.classList.add('active');
     li.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="flex-shrink:0;opacity:0.7">
