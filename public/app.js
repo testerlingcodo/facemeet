@@ -34,8 +34,15 @@ const peers = {}; // peerId -> RTCPeerConnection
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    // TURN servers — required for cellular/CGNAT networks
+    { urls: 'turn:global.relay.metered.ca:80',   username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:global.relay.metered.ca:443',  username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ],
+  iceCandidatePoolSize: 10
 };
 
 // ── DOM ──
@@ -143,8 +150,8 @@ let filterCanvas, filterCtx, filterSourceVideo;
 
 function startFilterCanvas(rawStream) {
   filterCanvas = document.createElement('canvas');
-  filterCanvas.width = 640;
-  filterCanvas.height = 480;
+  filterCanvas.width = 480;
+  filterCanvas.height = 360;
   filterCtx = filterCanvas.getContext('2d');
 
   filterSourceVideo = document.createElement('video');
@@ -200,7 +207,7 @@ function startFilterCanvas(rawStream) {
   setTimeout(startDraw, 500);
 
   // Combine canvas video track + original audio tracks
-  const canvasStream = filterCanvas.captureStream(30);
+  const canvasStream = filterCanvas.captureStream(15);
   const audioTracks = rawStream.getAudioTracks();
   audioTracks.forEach(t => canvasStream.addTrack(t));
   return canvasStream;
@@ -305,10 +312,10 @@ async function enterMeeting() {
   joinBtn.disabled = true;
   joinBtn.textContent = 'Connecting…';
 
-  // Lower constraints = less data usage (good for 4G/5G)
+  // Low constraints for data saving — works on 4G/5G cellular
   const mediaConstraints = {
-    video: { width: { ideal: 640, max: 1280 }, height: { ideal: 480, max: 720 }, frameRate: { ideal: 15, max: 30 } },
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    video: { width: { ideal: 480, max: 640 }, height: { ideal: 360, max: 480 }, frameRate: { ideal: 15, max: 24 } },
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 22050 }
   };
   try {
     localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
@@ -386,10 +393,10 @@ async function applyBitrateLimit(pc) {
       const params = sender.getParameters();
       if (!params.encodings || !params.encodings.length) params.encodings = [{}];
       if (sender.track.kind === 'video') {
-        params.encodings[0].maxBitrate = 400_000;  // 400 kbps video
-        params.encodings[0].maxFramerate = 20;
+        params.encodings[0].maxBitrate = 250_000;  // 250 kbps — works on 4G
+        params.encodings[0].maxFramerate = 15;
       } else if (sender.track.kind === 'audio') {
-        params.encodings[0].maxBitrate = 32_000;   // 32 kbps audio
+        params.encodings[0].maxBitrate = 24_000;   // 24 kbps audio
       }
       await sender.setParameters(params).catch(() => {});
     }
