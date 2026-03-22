@@ -272,6 +272,7 @@ function addVideoTile(id, name, stream, isLocal = false) {
 
 
   videoGrid.appendChild(tile);
+  addPinchZoom(video);
   updateCount();
   return tile;
 }
@@ -304,8 +305,13 @@ async function enterMeeting() {
   joinBtn.disabled = true;
   joinBtn.textContent = 'Connecting…';
 
+  // Lower constraints = less data usage (good for 4G/5G)
+  const mediaConstraints = {
+    video: { width: { ideal: 640, max: 1280 }, height: { ideal: 480, max: 720 }, frameRate: { ideal: 15, max: 30 } },
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+  };
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
   } catch (e) {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -316,9 +322,11 @@ async function enterMeeting() {
     }
   }
 
-  // Save active camera ID for the picker
+  // Save active camera/mic ID for pickers
   const videoTrack = localStream.getVideoTracks()[0];
   if (videoTrack) activeCameraId = videoTrack.getSettings().deviceId;
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (audioTrack) activeMicId = audioTrack.getSettings().deviceId;
 
   // Build filtered stream for sending to peers
   filteredStream = startFilterCanvas(localStream);
@@ -371,6 +379,23 @@ function getOutgoingStream() {
   return filteredStream || localStream;
 }
 
+async function applyBitrateLimit(pc) {
+  try {
+    for (const sender of pc.getSenders()) {
+      if (!sender.track) continue;
+      const params = sender.getParameters();
+      if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+      if (sender.track.kind === 'video') {
+        params.encodings[0].maxBitrate = 400_000;  // 400 kbps video
+        params.encodings[0].maxFramerate = 20;
+      } else if (sender.track.kind === 'audio') {
+        params.encodings[0].maxBitrate = 32_000;   // 32 kbps audio
+      }
+      await sender.setParameters(params).catch(() => {});
+    }
+  } catch {}
+}
+
 async function createPeer(targetId, isInitiator, userName) {
   const pc = new RTCPeerConnection(ICE_SERVERS);
   peers[targetId] = pc;
@@ -389,6 +414,7 @@ async function createPeer(targetId, isInitiator, userName) {
   };
 
   pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') applyBitrateLimit(pc);
     if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
       removeVideoTile(targetId);
       delete peers[targetId];
@@ -959,6 +985,7 @@ const ssOverlay        = document.getElementById('ss-overlay');
 const ssOverlayVideo   = document.getElementById('ss-overlay-video');
 const ssOverlayName    = document.getElementById('ss-overlay-name');
 const ssOverlayClose   = document.getElementById('ss-overlay-close');
+addPinchZoom(ssOverlayVideo);
 const stopShareBar     = document.getElementById('stop-share-bar');
 const stopShareBarBtn  = document.getElementById('stop-share-bar-btn');
 
@@ -1200,6 +1227,79 @@ ssOverlayClose.addEventListener('click', () => {
   ssOverlayVideo.srcObject = null;
 });
 
+// ── PINCH-TO-ZOOM ──
+function addPinchZoom(el) {
+  let scale = 1, startScale = 1, startDist = 0;
+  let tx = 0, ty = 0, startTx = 0, startTy = 0, panStartX = 0, panStartY = 0;
+  let lastTap = 0;
+
+  function midpoint(t) {
+    return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 };
+  }
+  function dist(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+  function applyTransform() {
+    el.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+    el.style.transformOrigin = 'center center';
+    el.style.transition = 'none';
+  }
+  function resetZoom() {
+    scale = 1; tx = 0; ty = 0;
+    el.style.transition = 'transform 0.25s ease';
+    el.style.transform = 'translate(0,0) scale(1)';
+  }
+
+  el.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      startDist = dist(e.touches);
+      startScale = scale;
+      const mid = midpoint(e.touches);
+      panStartX = mid.x; panStartY = mid.y;
+      startTx = tx; startTy = ty;
+    } else if (e.touches.length === 1) {
+      panStartX = e.touches[0].clientX - tx;
+      panStartY = e.touches[0].clientY - ty;
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const newDist = dist(e.touches);
+      scale = Math.min(4, Math.max(1, startScale * (newDist / startDist)));
+      const mid = midpoint(e.touches);
+      if (scale > 1) { tx = startTx + mid.x - panStartX; ty = startTy + mid.y - panStartY; }
+      else { tx = 0; ty = 0; }
+      applyTransform();
+    } else if (e.touches.length === 1 && scale > 1) {
+      e.preventDefault();
+      tx = e.touches[0].clientX - panStartX;
+      ty = e.touches[0].clientY - panStartY;
+      applyTransform();
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0 && scale <= 1) resetZoom();
+    // Double-tap to reset
+    const now = Date.now();
+    if (now - lastTap < 280) resetZoom();
+    lastTap = now;
+  });
+
+  // Mouse scroll zoom (desktop)
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    scale = Math.min(4, Math.max(1, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
+    if (scale <= 1) { scale = 1; tx = 0; ty = 0; }
+    el.style.transition = 'transform 0.1s';
+    el.style.transformOrigin = 'center center';
+    el.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+  }, { passive: false });
+}
+
 // ── CAMERA SELECTION ──
 let activeCameraId = null;
 
@@ -1267,10 +1367,78 @@ camSelectBtn.addEventListener('click', async (e) => {
   camPicker.style.display = 'block';
 });
 
-// Close picker when clicking outside
+// Close cam picker when clicking outside
 document.addEventListener('click', (e) => {
   if (!camPicker.contains(e.target) && e.target !== camSelectBtn) {
     camPicker.style.display = 'none';
+  }
+});
+
+// ── MIC SELECTION ──
+let activeMicId = null;
+const micSelectBtn = document.getElementById('mic-select-btn');
+const micPicker    = document.getElementById('mic-picker');
+const micList      = document.getElementById('mic-list');
+
+async function loadMicList() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(d => d.kind === 'audioinput');
+  micList.innerHTML = '';
+  mics.forEach((mic, i) => {
+    const li = document.createElement('li');
+    const isActive = mic.deviceId === activeMicId;
+    if (isActive) li.classList.add('active');
+    li.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="flex-shrink:0;opacity:0.7">
+        <rect x="9" y="2" width="6" height="11" rx="3"/>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span>${mic.label || `Microphone ${i + 1}`}</span>
+      <span class="cam-check">✓</span>
+    `;
+    li.addEventListener('click', () => switchMicrophone(mic.deviceId));
+    micList.appendChild(li);
+  });
+}
+
+async function switchMicrophone(deviceId) {
+  if (deviceId === activeMicId) { micPicker.style.display = 'none'; return; }
+  activeMicId = deviceId;
+
+  const newAudioStream = await navigator.mediaDevices.getUserMedia({
+    audio: { deviceId: { exact: deviceId }, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    video: false
+  });
+  const newAudioTrack = newAudioStream.getAudioTracks()[0];
+
+  // Replace in localStream
+  const oldAudioTrack = localStream.getAudioTracks()[0];
+  if (oldAudioTrack) { localStream.removeTrack(oldAudioTrack); oldAudioTrack.stop(); }
+  localStream.addTrack(newAudioTrack);
+  newAudioTrack.enabled = micOn;
+
+  // Replace in all peer connections
+  Object.values(peers).forEach(pc => {
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+    if (sender) sender.replaceTrack(newAudioTrack);
+  });
+
+  micPicker.style.display = 'none';
+  showToast('Microphone switched');
+  await loadMicList();
+}
+
+micSelectBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const isOpen = micPicker.style.display !== 'none';
+  if (isOpen) { micPicker.style.display = 'none'; return; }
+  await loadMicList();
+  micPicker.style.display = 'block';
+});
+
+document.addEventListener('click', (e) => {
+  if (!micPicker.contains(e.target) && e.target !== micSelectBtn) {
+    micPicker.style.display = 'none';
   }
 });
 

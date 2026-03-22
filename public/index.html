@@ -187,20 +187,39 @@
     <div id="controls">
 
       <div class="ctrl-wrap">
-        <button id="mic-btn" class="ctrl-btn" title="Toggle mic">
-          <!-- MIC ON -->
-          <svg id="mic-icon-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-            <rect x="9" y="2" width="6" height="11" rx="3"/>
-            <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-          </svg>
-          <!-- MIC OFF -->
-          <svg id="mic-icon-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style="display:none">
-            <rect x="9" y="2" width="6" height="11" rx="3" opacity="0.4"/>
-            <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4"/>
-            <line x1="3" y1="3" x2="21" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
-        </button>
+        <div class="cam-group">
+          <button id="mic-btn" class="ctrl-btn" title="Toggle mic">
+            <!-- MIC ON -->
+            <svg id="mic-icon-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </svg>
+            <!-- MIC OFF -->
+            <svg id="mic-icon-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style="display:none">
+              <rect x="9" y="2" width="6" height="11" rx="3" opacity="0.4"/>
+              <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4"/>
+              <line x1="3" y1="3" x2="21" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button id="mic-select-btn" class="ctrl-btn-arrow" title="Choose microphone">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6" fill="white">
+              <path d="M1 1l4 4 4-4"/>
+            </svg>
+          </button>
+        </div>
         <span class="ctrl-label" id="mic-label">Mute</span>
+
+        <!-- Mic picker dropdown -->
+        <div id="mic-picker" class="cam-picker" style="display:none">
+          <div class="cam-picker-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </svg>
+            Select a Microphone
+          </div>
+          <ul id="mic-list"></ul>
+        </div>
       </div>
 
       <div class="ctrl-wrap">
